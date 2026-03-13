@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://YOUR_SUPABASE_HOST:5432/postgres?sslmode=require
+    username: postgres
+    password: "YOUR_PASSWORD_HERE"
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+heart:
+  api:
+    base-url: https://marconrad.com/uob/heart
+
+app:
+  use-mock-api: true
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:3000"
+
+weather:
+  api:
+    key: YOUR_OPENWEATHER_KEY_HERE
+    base-url: https://api.openweathermap.org/data/2.5
