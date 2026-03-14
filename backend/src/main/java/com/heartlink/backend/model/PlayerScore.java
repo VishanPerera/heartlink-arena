@@ -2,7 +2,6 @@ package com.heartlink.backend.model;
 
 import jakarta.persistence.*;
 
-// Creates "player_scores" table — one row per player per game
 @Entity
 @Table(name = "player_scores")
 public class PlayerScore {

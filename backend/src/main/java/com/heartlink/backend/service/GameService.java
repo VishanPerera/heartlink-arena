@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class GameService {
 
-    // Interoperability: WebClient beans for external API calls
+    // Interoperability
     @Autowired @Qualifier("heartApiClient")   private WebClient heartApiClient;
     @Autowired @Qualifier("weatherApiClient") private WebClient weatherApiClient;
 
@@ -39,20 +39,15 @@ public class GameService {
     @Value("${app.use-mock-api}") private boolean useMockApi;
     @Value("${weather.api.key}")  private String weatherApiKey;
 
-    // In-memory store of active game sessions (replace with DB for production)
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
 
-    // In-memory user store (mock only — real app uses Heart API)
     private final Map<String, String> mockUsers = new ConcurrentHashMap<>(Map.of(
         "StarGuardian", "pass123",
         "PinkWizard",   "pass123",
         "MoonGuardian", "pass123"
     ));
 
-    // ════════════════════════════════════════════════════════════════
-    //  AUTH
-    // ════════════════════════════════════════════════════════════════
-
+    
     public AuthResponse login(LoginRequest req) {
         if (useMockApi) return mockLogin(req);
 
@@ -86,9 +81,7 @@ public class GameService {
         return mockRegister(req);
     }
 
-    // ── Mock auth ────────────────────────────────────────────────────
     private AuthResponse mockLogin(LoginRequest req) {
-    // Now checks real database instead of hardcoded Map
     Optional<User> userOpt = userRepository.findByUsername(req.username());
     if (userOpt.isPresent() && userOpt.get().getPassword().equals(req.password())) {
         User user = userOpt.get();
@@ -111,19 +104,14 @@ public class GameService {
     return new AuthResponse(true, token, req.username(), 0, "Registered successfully!");
 }
 
-    // ════════════════════════════════════════════════════════════════
-    //  LOBBY
-    // ════════════════════════════════════════════════════════════════
-
+  
     public LobbyResponse createGame(CreateGameRequest req) {
         String gameId = "HL-" + (1000 + new Random().nextInt(8999));
         GameSession session = new GameSession(gameId, req.username());
 
-        // Add host as first player
         session.getPlayers().put(req.username(), new PlayerData());
         session.setStatus(GameSession.Status.ACTIVE);
 
-        // Spawn initial hearts
         spawnHearts(session, 10);
         sessions.put(gameId, session);
 
@@ -161,7 +149,6 @@ public class GameService {
     }
 
     private List<GameSummary> getAvailableGames() {
-        // Add mock games so lobby always has content
         List<GameSummary> list = sessions.values().stream()
             .filter(s -> s.getStatus() == GameSession.Status.ACTIVE)
             .map(s -> new GameSummary(
@@ -170,17 +157,12 @@ public class GameService {
             ))
             .collect(Collectors.toList());
 
-        // Always add a couple of mock filler games for demo purposes
         if (list.size() < 2) {
             list.add(new GameSummary("HL-3821", "MoonGuardian", 3, 5, "ACTIVE"));
             list.add(new GameSummary("HL-5540", "PinkWizard",   2, 5, "ACTIVE"));
         }
         return list;
     }
-
-    // ════════════════════════════════════════════════════════════════
-    //  GAME STATE
-    // ════════════════════════════════════════════════════════════════
 
     public GameStateResponse getGameState(String gameId) {
         GameSession session = sessions.get(gameId);
@@ -224,25 +206,19 @@ public class GameService {
         );
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  COLLECT HEART
-    // ════════════════════════════════════════════════════════════════
-
     public CollectHeartResponse collectHeart(CollectHeartRequest req) {
-        // Event-driven: Triggered by player clicking a heart on the canvas
+        // Event-driven
         GameSession session = sessions.get(req.gameId());
         if (session == null) return new CollectHeartResponse(false, 0, 0, 0, 0, "Game not found");
 
         PlayerData player = session.getPlayers().get(req.username());
         if (player == null) return new CollectHeartResponse(false, 0, 0, 0, 0, "Player not found");
 
-        // Mark heart as collected
         session.getHearts().stream()
             .filter(h -> h.getId().equals(req.heartId()) && !h.isCollected())
             .findFirst()
             .ifPresent(h -> h.setCollected(true));
 
-        // Calculate points — doubled if boost is active
         boolean boosted = player.isBoostActive();
         int base   = req.heartType().equals("blue") ? 5 : 2;
         int earned = boosted ? base * 2 : base;
@@ -255,7 +231,6 @@ public class GameService {
             // TODO: heartApiClient.post("/collect").bodyValue(...).retrieve().block();
         }
 
-        // Respawn a new heart to keep the arena full
         respawnHeart(session, req.heartType());
 
         return new CollectHeartResponse(
@@ -265,12 +240,9 @@ public class GameService {
         );
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  BOOST
-    // ════════════════════════════════════════════════════════════════
 
     public BoostResponse activateBoost(BoostRequest req) {
-        // Event-driven: Triggered by player clicking the Boost button
+        // Event-driven
         GameSession session = sessions.get(req.gameId());
         if (session == null) return new BoostResponse(false, 0, 0, 0, "Game not found");
 
@@ -281,11 +253,9 @@ public class GameService {
             return new BoostResponse(false, 0, player.getTotalPoints(), 0, "Need at least 10 points");
         }
 
-        // Deduct hearts to total 10 points (prefer red hearts first)
         deductPoints(player, 10);
         player.setBoostActive(true);
 
-        // Schedule boost deactivation after 30 seconds
         new Timer().schedule(new TimerTask() {
             @Override public void run() { player.setBoostActive(false); }
         }, 30_000);
@@ -311,13 +281,10 @@ public class GameService {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  TRADE
-    // ════════════════════════════════════════════════════════════════
-
+  
     public TradeResponse trade(TradeRequest req) {
-        // Event-driven: Triggered by player submitting the Trade popup form
-        // Interoperability: Uses Heart Game API transfer hearts endpoint
+        // Event-driven
+        // Interoperability
         GameSession session = sessions.get(req.gameId());
         if (session == null) return new TradeResponse(false, 0, req.toUsername(), 0, "Game not found");
 
@@ -352,22 +319,17 @@ public class GameService {
             "Sent " + req.amount() + " " + req.heartType() + " hearts to " + req.toUsername());
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  LEADERBOARD
-    // ════════════════════════════════════════════════════════════════
-
+   
     public LeaderboardResponse getLeaderboard(String gameId) {
     GameSession session = sessions.get(gameId);
 
     List<LeaderboardEntry> ranked;
 
     if (session != null) {
-        // Step 1 — Sort players by total points (highest first)
         List<Map.Entry<String, PlayerData>> sorted = session.getPlayers().entrySet().stream()
             .sorted((a, b) -> b.getValue().getTotalPoints() - a.getValue().getTotalPoints())
             .collect(Collectors.toList());
 
-        // Step 2 — Build the ranked list
         ranked = new ArrayList<>();
         for (int i = 0; i < sorted.size(); i++) {
             var e = sorted.get(i);
@@ -380,7 +342,6 @@ public class GameService {
             ));
         }
 
-        // Step 3 — Save every player's score to PostgreSQL (Supabase)
         for (LeaderboardEntry entry : ranked) {
             PlayerScore score = new PlayerScore();
             score.setGameId(gameId);
@@ -392,7 +353,6 @@ public class GameService {
             playerScoreRepository.save(score);  // persists to database
         }
 
-        // Step 4 — Mark game as FINISHED in the game_records table
         gameRecordRepository.findById(gameId).ifPresent(record -> {
             record.setStatus("FINISHED");
             record.setFinishedAt(Instant.now());
@@ -400,12 +360,10 @@ public class GameService {
         });
 
     } else {
-        // Game is no longer in memory — load scores from database instead
         List<PlayerScore> dbScores = playerScoreRepository
             .findByGameIdOrderByTotalPointsDesc(gameId);
 
         if (!dbScores.isEmpty()) {
-            // Found in DB — rebuild leaderboard from saved scores
             ranked = dbScores.stream()
                 .map(s -> new LeaderboardEntry(
                     s.getRank(),
@@ -416,7 +374,6 @@ public class GameService {
                 ))
                 .collect(Collectors.toList());
         } else {
-            // Nothing in DB either — fall back to mock data
             ranked = mockLeaderboard(gameId).rankings();
         }
     }
@@ -433,18 +390,12 @@ private LeaderboardResponse mockLeaderboard(String gameId) {
     ));
 }
 
-    // ════════════════════════════════════════════════════════════════
-    //  WEATHER
-    // ════════════════════════════════════════════════════════════════
-
     public WeatherResponse getWeather(String city) {
         if (useMockApi || weatherApiKey.equals("YOUR_OPENWEATHER_KEY_HERE")) {
-            // Mock weather response
             return new WeatherResponse("clear", 1.0, "Clear skies — normal spawn rate");
         }
 
         try {
-            // Interoperability: Real OpenWeatherMap API call
             var raw = weatherApiClient.get()
                 .uri(u -> u.path("/weather")
                     .queryParam("q", city)
@@ -476,10 +427,6 @@ private LeaderboardResponse mockLeaderboard(String gameId) {
             return new WeatherResponse("unknown", 1.0, "Weather API error: " + e.getMessage());
         }
     }
-
-    // ════════════════════════════════════════════════════════════════
-    //  HELPERS
-    // ════════════════════════════════════════════════════════════════
 
     private void spawnHearts(GameSession session, int count) {
         Random rnd = new Random();

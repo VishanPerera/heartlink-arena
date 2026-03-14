@@ -3,7 +3,6 @@ package com.heartlink.backend.model;
 import jakarta.persistence.*;
 import java.time.Instant;
 
-// This class creates a "users" table in PostgreSQL automatically
 @Entity
 @Table(name = "users")
 public class User {

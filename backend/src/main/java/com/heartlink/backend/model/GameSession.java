@@ -27,7 +27,6 @@ public class GameSession {
         this.spawnMultiplier = 1.0;
     }
 
-    // ── Getters ──────────────────────────────────────────────────────
     public String getGameId()            { return gameId; }
     public String getHostUsername()      { return hostUsername; }
     public Status getStatus()            { return status; }
@@ -37,12 +36,10 @@ public class GameSession {
     public double getSpawnMultiplier()   { return spawnMultiplier; }
     public int getPlayerCount()          { return players.size(); }
 
-    // ── Setters ──────────────────────────────────────────────────────
     public void setStatus(Status s)              { this.status = s; }
     public void setTimeRemaining(int t)          { this.timeRemaining = t; }
     public void setSpawnMultiplier(double m)     { this.spawnMultiplier = m; }
 
-    // ── Nested: Player Data ──────────────────────────────────────────
     public static class PlayerData {
         private int redHearts   = 0;
         private int blueHearts  = 0;
@@ -67,7 +64,6 @@ public class GameSession {
         }
     }
 
-    // ── Nested: Heart Data ───────────────────────────────────────────
     public static class HeartData {
         private final String id;
         private final String type;  // "red" or "blue"
