@@ -1,19 +1,19 @@
-# ── Maven build output (Java compiled files) ──────────────
+# Maven build output (Java compiled files)
 backend/target/
 
-# ── Node modules (JavaScript packages) ───────────────────
+# Node modules (JavaScript packages) 
 frontend/node_modules/
 frontend/dist/
 
-# ── IDE and editor files ──────────────────────────────────
+# IDE and editor files 
 .idea/
 .vscode/
 *.iml
 *.class
 
-# ── OS files ─────────────────────────────────────────────
+# OS files
 .DS_Store
 Thumbs.db
 
-# ── Secret config files (protect your password) ──────────
+# Secret config files (protect your password)
 backend/src/main/resources/application.yml
