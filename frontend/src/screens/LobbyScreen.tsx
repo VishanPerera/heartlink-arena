@@ -14,7 +14,7 @@ export default function LobbyScreen({ session, onEnterArena }: Props) {
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Interoperability: Poll available games every 5 seconds
+  // Interoperability
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -27,7 +27,7 @@ export default function LobbyScreen({ session, onEnterArena }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  // Event-driven: Create Game button
+  // Event-driven
   const handleCreate = async () => {
     setLoading(true); setError('');
     try {
@@ -39,7 +39,7 @@ export default function LobbyScreen({ session, onEnterArena }: Props) {
     } finally { setLoading(false); }
   };
 
-  // Event-driven: Join Game button
+  // Event-driven
   const handleJoin = async (gid?: string) => {
     const id = gid || gameId.trim();
     if (!id) { setError('Please enter a Game ID'); return; }

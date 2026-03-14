@@ -17,13 +17,13 @@ export default function TradePopup({ session, gameId, onClose, onSent }: Props) 
   const [error,     setError]     = useState('');
   const [loading,   setLoading]   = useState(false);
 
-  // Event-driven: Send Trade button click
+  // Event-driven
   const handleSend = async () => {
     if (!target.trim()) { setError('Please enter a target username'); return; }
     if (!amount || parseInt(amount) < 1) { setError('Please enter a valid amount'); return; }
     setLoading(true); setError('');
     try {
-      // Interoperability: POST /api/game/trade → Spring Boot → Heart Game API
+      // Interoperability
       const res = await sendTrade(gameId, session.username, target.trim(), session.token, parseInt(amount), heartType);
       if (res.success) {
         onSent(`💌 Sent ${amount} ${heartType} hearts to ${target}!`);
