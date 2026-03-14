@@ -3,7 +3,6 @@ package com.heartlink.backend.model;
 import jakarta.persistence.*;
 import java.time.Instant;
 
-// Creates a "game_records" table — stores finished games
 @Entity
 @Table(name = "game_records")
 public class GameRecord {

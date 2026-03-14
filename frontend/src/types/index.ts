@@ -1,6 +1,3 @@
-// Assisted by Claude AI for structure and code generation
-// High cohesion: All shared TypeScript types live here
-
 export interface AuthResponse {
   success: boolean;
   token: string | null;

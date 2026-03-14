@@ -26,7 +26,6 @@ export default function App() {
 
   const showToast = (msg: string) => { setToast(msg); };
 
-  // Fallback session for direct navigation via prototype nav
   const safeSession: UserSession = session ?? { username: 'StarGuardian', token: 'demo-token', heartsBalance: 100 };
   const safeGameId = gameId || 'HL-0000';
 
@@ -76,7 +75,14 @@ export default function App() {
       {toast && <Toast msg={toast} onDone={() => setToast(null)} />}
 
       {/* ── Prototype nav chrome ── */}
-      <PrototypeNav screen={showTrade ? 'trade' : screen} goTo={goTo} />
+      <PrototypeNav
+        screen={showTrade ? 'trade' : screen}
+        goTo={(target) => {
+          if (screen === 'login' && target !== 'login') return;
+          goTo(target);
+        }}
+        lockNavigation={screen === 'login'}
+      />
 
     </div>
   );

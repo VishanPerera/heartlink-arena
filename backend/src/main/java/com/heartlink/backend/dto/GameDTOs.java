@@ -5,7 +5,6 @@ import java.util.List;
 
 public class GameDTOs {
 
-    // ── Auth ────────────────────────────────────────────────────────
     public record LoginRequest(String username, String password) {}
 
     public record RegisterRequest(String username, String password, String email) {}
@@ -19,7 +18,6 @@ public class GameDTOs {
         String message
     ) {}
 
-    // ── Lobby ───────────────────────────────────────────────────────
     public record CreateGameRequest(String username, String token) {}
 
     public record JoinGameRequest(String gameId, String username, String token) {}
@@ -39,7 +37,6 @@ public class GameDTOs {
         String status
     ) {}
 
-    // ── Game State ──────────────────────────────────────────────────
     public record GameStateResponse(
         String gameId,
         int timeRemaining,
@@ -67,7 +64,6 @@ public class GameDTOs {
         boolean collected
     ) {}
 
-    // ── Heart Collection ────────────────────────────────────────────
     public record CollectHeartRequest(
         String gameId,
         String username,
@@ -85,7 +81,6 @@ public class GameDTOs {
         String message
     ) {}
 
-    // ── Boost ───────────────────────────────────────────────────────
     public record BoostRequest(String gameId, String username, String token) {}
 
     public record BoostResponse(
@@ -96,7 +91,6 @@ public class GameDTOs {
         String message
     ) {}
 
-    // ── Trade ───────────────────────────────────────────────────────
     public record TradeRequest(
         String gameId,
         String fromUsername,
@@ -114,7 +108,6 @@ public class GameDTOs {
         String message
     ) {}
 
-    // ── Leaderboard ─────────────────────────────────────────────────
     public record LeaderboardResponse(
         String gameId,
         List<LeaderboardEntry> rankings
@@ -128,7 +121,6 @@ public class GameDTOs {
         int totalPoints
     ) {}
 
-    // ── Weather ─────────────────────────────────────────────────────
     public record WeatherResponse(
         String condition,   // "rain", "clear", "clouds" etc.
         double spawnMultiplier,
