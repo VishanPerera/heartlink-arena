@@ -13,7 +13,6 @@ interface Props {
 
 interface ScorePopup { id: number; x: number; y: number; pts: number; color: string; }
 
-// ── Heart generation helpers ─────────────────────────────────────────────
 let heartCounter = 0;
 
 function randomHeart(): HeartObject {
@@ -29,7 +28,6 @@ function randomHeart(): HeartObject {
 }
 
 function initialHearts(): HeartObject[] {
-  // Start with 8 hearts on the arena
   return Array.from({ length: 8 }, randomHeart);
 }
 
@@ -38,8 +36,7 @@ function formatTime(s: number) {
   return `${Math.floor(clamped / 60)}:${String(clamped % 60).padStart(2, '0')}`;
 }
 
-// How many seconds between each new heart spawn (adjusted by weather)
-const BASE_SPAWN_INTERVAL = 2500; // ms
+const BASE_SPAWN_INTERVAL = 2500; 
 
 export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLobby }: Props) {
   const [hearts,      setHearts]      = useState<HeartObject[]>(initialHearts);
@@ -61,9 +58,7 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
   const spawnRef      = useRef<ReturnType<typeof setInterval> | null>(null);
   const boostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── FIX 1: Timer is purely frontend — never touched by the poll ─────────
-  // We only read timeRemaining ONCE (on first poll) to sync with server,
-  // then the local setInterval drives the countdown from there.
+ 
   const timerInitialised = useRef(false);
 
   useEffect(() => {
@@ -78,27 +73,22 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
       });
     }, 1000);
     return () => clearInterval(timerRef.current!);
-  }, []); // ← empty deps: runs ONCE, never restarts
+  }, []); 
 
-  // Navigate to leaderboard when game ends
+  
   useEffect(() => {
     if (gameOver) onEndGame();
   }, [gameOver]);
 
-  // ── FIX 2: Heart spawning — continuous random hearts every ~2.5s ────────
-  // When backend is available it sends hearts; when not, we spawn locally.
-  // Either way the arena is always full of hearts.
+ 
   useEffect(() => {
     const spawnInterval = Math.round(BASE_SPAWN_INTERVAL / Math.max(spawnMult, 0.5));
 
     spawnRef.current = setInterval(() => {
       setHearts(prev => {
-        // Don't let arena overflow — cap at 15 hearts
         if (prev.length >= 15) {
-          // Remove the oldest heart to make room
           return [...prev.slice(1), randomHeart()];
         }
-        // Add 1-2 new hearts each tick
         const count = Math.random() < 0.35 ? 2 : 1;
         const newOnes = Array.from({ length: count }, randomHeart);
         return [...prev, ...newOnes];
@@ -106,32 +96,26 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
     }, spawnInterval);
 
     return () => clearInterval(spawnRef.current!);
-  }, [spawnMult]); // re-run if weather changes the multiplier
+  }, [spawnMult]); 
 
-  // ── Poll backend for score sync (NOT timer, NOT hearts if backend offline) ─
   useEffect(() => {
     const poll = async () => {
       try {
         const state = await getGameState(gameId);
         if (!state) return;
 
-        // Sync hearts from backend if it has them
         if (state.hearts?.length) {
           setHearts(state.hearts);
         }
-        // Sync other players' scores
         if (state.players?.length) setPlayers(state.players);
 
-        // ── FIX: Only set timer from server ONCE (first sync) ──────────────
         if (!timerInitialised.current && state.timeRemaining > 0) {
           timerInitialised.current = true;
           setTimeLeft(state.timeRemaining);
         }
 
-        // Weather multiplier
         if (state.spawnMultiplier) setSpawnMult(state.spawnMultiplier);
 
-        // Our own score from server
         const me = state.players?.find(p => p.username === session.username);
         if (me) {
           setRedHearts(me.redHearts);
@@ -143,7 +127,6 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
         if (state.status === 'FINISHED') setGameOver(true);
 
       } catch {
-        // Backend unreachable — local state keeps running, hearts keep spawning
       }
     };
 
@@ -152,7 +135,6 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
     return () => clearInterval(interval);
   }, [gameId, session.username]);
 
-  // ── Weather label ────────────────────────────────────────────────────────
   useEffect(() => {
     getWeather('London')
       .then(w => {
@@ -170,32 +152,28 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
       .catch(() => {});
   }, []);
 
-  // ── FIX 3: Collect a heart ───────────────────────────────────────────────
-  // Checks if the heart is inside the boost zone for double points
+  
   const handleCollect = useCallback(async (heart: HeartObject) => {
     if (collecting.has(heart.id)) return;
 
     setCollecting(prev => new Set([...prev, heart.id]));
 
-    // Animate then remove
     setTimeout(() => {
       setHearts(prev => prev.filter(h => h.id !== heart.id));
       setCollecting(prev => { const n = new Set(prev); n.delete(heart.id); return n; });
     }, 380);
 
-    // ── Check if heart is inside the boost zone ──────────────────────────
-    // Boost zone is a circle centred at boostZone.x/y with radius 18% of arena
+
     const inBoostZone = (() => {
       if (!boostZone || !boostActive) return false;
       const dx = heart.x - boostZone.x;
       const dy = heart.y - boostZone.y;
-      return Math.sqrt(dx * dx + dy * dy) <= 18; // 18% radius
+      return Math.sqrt(dx * dx + dy * dy) <= 18; 
     })();
 
     const base   = heart.type === 'blue' ? 5 : 2;
     const earned = inBoostZone ? base * 2 : base;
 
-    // Score popup
     const pid = ++popupId.current;
     const popupColor = inBoostZone ? '#ffd700' : (heart.type === 'blue' ? '#5ce1e6' : '#ff4d6d');
     setScorePopups(prev => [
@@ -204,7 +182,6 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
     ]);
     setTimeout(() => setScorePopups(prev => prev.filter(p => p.id !== pid)), 900);
 
-    // Optimistic local score update
     if (heart.type === 'blue') setBlueHearts(c => c + 1);
     else                        setRedHearts(c => c + 1);
     setTotalPts(t => t + earned);
@@ -214,12 +191,10 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
     } catch { /* keep local update */ }
   }, [collecting, boostActive, boostZone, gameId, session]);
 
-  // ── FIX 3: Boost — places a glowing zone on the arena ───────────────────
-  // Zone appears at a random position. Hearts collected inside it = double points.
+  
   const handleBoost = async () => {
     if (totalPts < 10 || boostActive) return;
 
-    // Place zone at a random position in the middle area of the arena
     const zone = {
       x: 20 + Math.random() * 60,
       y: 20 + Math.random() * 60,
@@ -229,7 +204,6 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
       setBoostActive(true);
       setBoostZone(zone);
       setTotalPts(t => t - 10);
-      // Boost lasts 30 seconds then disappears
       boostTimerRef.current = setTimeout(() => {
         setBoostActive(false);
         setBoostZone(null);
@@ -243,11 +217,10 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
         setTotalPts(res.remainingPoints);
       }
     } catch {
-      applyBoost(); // offline fallback
+      applyBoost(); 
     }
   };
 
-  // Cleanup boost timer on unmount
   useEffect(() => () => {
     if (boostTimerRef.current) clearTimeout(boostTimerRef.current);
   }, []);
@@ -352,7 +325,7 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
             );
           })}
 
-          {/* Score popups */}
+          
           {scorePopups.map(p => (
             <div
               key={p.id}
@@ -371,7 +344,7 @@ export default function ArenaScreen({ session, gameId, onTrade, onEndGame, onLob
         </div>
       </div>
 
-      {/* ── Bottom bar ── */}
+      
       <div className="arena-bottom">
         <span className="arena-hint">Click hearts to collect!</span>
 
