@@ -5,9 +5,11 @@ import type {
   LeaderboardResponse, WeatherResponse
 } from '../types';
 
-// Base URL — change this when deploying backend to Render
-// To switch to production: change to 'https://your-app.onrender.com'
-const BASE_URL = '/api';  // proxied to localhost:8080 via vite.config.ts
+// In development, Vite proxies /api → localhost:8080 (see vite.config.ts).
+// In production (Vercel), set VITE_API_BASE_URL to your deployed backend URL (e.g. Render).
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -56,11 +58,13 @@ export const activateBoost = (gameId: string, username: string, token: string): 
 
 
 //heart API
+const HEART_API_URL = import.meta.env.VITE_HEART_API_URL ?? 'https://marcconrad.com/uob/heart/api.php';
+
 export const getHeartPuzzle = (): Promise<{ question: string; solution: number }> =>
-  axios.get('https://marcconrad.com/uob/heart/api.php?out=json&base64=no')
+  axios.get(`${HEART_API_URL}?out=json&base64=no`)
     .then(r => r.data)
     .catch(() => ({
-      question: 'https://marcconrad.com/uob/heart/api.php?out=json&base64=no',
+      question: `${HEART_API_URL}?out=json&base64=no`,
       solution: -1  // -1 means API unavailable
     }));
 
